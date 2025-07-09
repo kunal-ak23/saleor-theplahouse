@@ -1,27 +1,27 @@
 ### Build and install packages
-FROM python:3.12-slim AS build
+FROM python:3.12 AS build-python
 
 RUN apt-get -y update \
-  && apt-get install -y --no-install-recommends build-essential gettext \
+  && apt-get install -y gettext \
+  # Cleanup apt cache
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
+# Install Python dependencies
 WORKDIR /app
-
-RUN pip install poetry==2.1.1 --no-cache-dir
+RUN --mount=type=cache,mode=0755,target=/root/.cache/pip pip install poetry==2.1.1
+RUN poetry config virtualenvs.create false
 COPY poetry.lock pyproject.toml /app/
-RUN poetry config virtualenvs.create false \
-  && poetry install --no-dev --no-interaction --no-ansi
+RUN --mount=type=cache,mode=0755,target=/root/.cache/pypoetry poetry install
 
-COPY . /app
-
-# Final image
+### Final image
 FROM python:3.12-slim
 
 RUN groupadd -r saleor && useradd -r -g saleor saleor
 
+# Pillow dependencies
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends \
+  && apt-get install -y \
   libffi8 \
   libgdk-pixbuf2.0-0 \
   liblcms2-2 \
@@ -30,23 +30,20 @@ RUN apt-get update \
   libtiff6 \
   libwebp7 \
   libpq5 \
+  # Required by celery[sqs] which uses pycurl for AWS SQS support
   libcurl4 \
   shared-mime-info \
   mime-support \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app
-
-COPY --from=build /app /app
-COPY --from=build /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
-COPY --from=build /usr/local/bin /usr/local/bin
-
-RUN find /usr/local/lib/python3.12/site-packages -name '*.pyc' -delete \
-  && find /usr/local/lib/python3.12/site-packages -name '__pycache__' -type d -exec rm -rf {} +
-
 RUN mkdir -p /app/media /app/static \
   && chown -R saleor:saleor /app/
+
+COPY --from=build-python /usr/local/lib/python3.12/site-packages/ /usr/local/lib/python3.12/site-packages/
+COPY --from=build-python /usr/local/bin/ /usr/local/bin/
+COPY . /app
+WORKDIR /app
 
 ARG STATIC_URL
 ENV STATIC_URL=${STATIC_URL:-/static/}
