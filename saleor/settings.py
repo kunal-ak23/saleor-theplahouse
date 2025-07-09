@@ -5,6 +5,7 @@ import os.path
 import warnings
 from typing import cast
 from urllib.parse import urlparse
+from corsheaders.defaults import default_headers
 
 import dj_database_url
 import dj_email_url
@@ -19,6 +20,7 @@ from django.core.cache import CacheKeyWarning
 from django.core.exceptions import ImproperlyConfigured
 from django.core.management.utils import get_random_secret_key
 from django.core.validators import URLValidator
+from dotenv import load_dotenv
 from graphql.execution import executor
 from pytimeparse import parse
 from sentry_sdk.integrations.celery import CeleryIntegration
@@ -38,6 +40,7 @@ from .patch_local import patch_local
 
 django_stubs_ext.monkeypatch()
 
+load_dotenv()
 
 def get_list(text):
     return [item.strip() for item in text.split(",") if item]
@@ -257,6 +260,7 @@ JWT_MANAGER_PATH = os.environ.get(
 )
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.middleware.common.CommonMiddleware",
     "saleor.core.middleware.jwt_refresh_token_middleware",
@@ -274,6 +278,7 @@ CELERY_RESTRICT_WRITER_METHOD = "saleor.core.db.connection.log_writer_usage"
 INSTALLED_APPS = [
     # External apps that need to go before django's
     "storages",
+    "corsheaders",
     # Django modules
     "django.contrib.contenttypes",
     "django.contrib.sites",
@@ -1017,6 +1022,16 @@ ENABLE_LIMITING_WEBHOOKS_FOR_IDENTICAL_PAYLOADS = get_bool_from_env(
     "ENABLE_LIMITING_WEBHOOKS_FOR_IDENTICAL_PAYLOADS", False
 )
 
+
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = [
+    origin.strip() for origin in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if origin.strip()
+]
+
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "authorization",
+    "authorization-bearer",  # if your frontend sends it this way
+]
 
 # Transaction items limit for PaymentGatewayInitialize / TransactionInitialize.
 # That setting limits the allowed number of transaction items for single entity.
