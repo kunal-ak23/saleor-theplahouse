@@ -23,4 +23,5 @@ docker build -t "$IMAGE_TAG" .
 echo "🐳 Pushing to Docker Hub..."
 docker push "$IMAGE_TAG"
 
+
 echo "✅ Successfully pushed: $IMAGE_TAG"
