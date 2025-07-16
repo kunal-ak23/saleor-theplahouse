@@ -257,7 +257,7 @@ if not SECRET_KEY and DEBUG:
 RSA_PRIVATE_KEY = None
 decoded_private_key = None
 if (os.environ["RSA_PRIVATE_KEY_BASE64"]):
-    b64_key = os.environ.get("RSA_PRIVATE_KEY_B64")
+    b64_key = os.environ.get("RSA_PRIVATE_KEY_BASE64")
     if b64_key:
         decoded_key = base64.b64decode(b64_key.encode("utf-8"))
         RSA_PRIVATE_KEY = decoded_key.decode("utf-8")
