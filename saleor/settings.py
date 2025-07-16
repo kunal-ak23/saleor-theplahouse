@@ -6,6 +6,7 @@ import warnings
 from typing import cast
 from urllib.parse import urlparse
 from corsheaders.defaults import default_headers
+import base64
 
 import dj_database_url
 import dj_email_url
@@ -253,7 +254,12 @@ if not SECRET_KEY and DEBUG:
     )
     SECRET_KEY = get_random_secret_key()
 
-RSA_PRIVATE_KEY = os.environ.get("RSA_PRIVATE_KEY", None)
+decoded_private_key = None
+if (os.environ["RSA_PRIVATE_KEY_BASE64"]):
+    decoded_private_key = base64.b64decode(os.environ["RSA_PRIVATE_KEY_BASE64"]).decode("utf-8")
+
+
+RSA_PRIVATE_KEY = os.environ.get("RSA_PRIVATE_KEY", decoded_private_key)
 RSA_PRIVATE_PASSWORD = os.environ.get("RSA_PRIVATE_PASSWORD", None)
 JWT_MANAGER_PATH = os.environ.get(
     "JWT_MANAGER_PATH", "saleor.core.jwt_manager.JWTManager"
