@@ -256,10 +256,13 @@ if not SECRET_KEY and DEBUG:
 
 decoded_private_key = None
 if (os.environ["RSA_PRIVATE_KEY_BASE64"]):
-    decoded_private_key = base64.b64decode(os.environ["RSA_PRIVATE_KEY_BASE64"]).decode("utf-8")
+    b64_key = os.environ.get("RSA_PRIVATE_KEY_B64")
+    if b64_key:
+        decoded_key = base64.b64decode(b64_key.encode("utf-8"))
+        RSA_PRIVATE_KEY = decoded_key.decode("utf-8")
+    else:
+        RSA_PRIVATE_KEY = None  # or raise an error
 
-
-RSA_PRIVATE_KEY = os.environ.get("RSA_PRIVATE_KEY", decoded_private_key)
 RSA_PRIVATE_PASSWORD = os.environ.get("RSA_PRIVATE_PASSWORD", None)
 JWT_MANAGER_PATH = os.environ.get(
     "JWT_MANAGER_PATH", "saleor.core.jwt_manager.JWTManager"
