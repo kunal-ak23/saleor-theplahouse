@@ -7,6 +7,7 @@ from typing import cast
 from urllib.parse import urlparse
 from corsheaders.defaults import default_headers
 import base64
+from pathlib import Path
 
 import dj_database_url
 import dj_email_url
@@ -40,6 +41,8 @@ from .graphql.promise import patch_promise
 from .patch_local import patch_local
 
 django_stubs_ext.monkeypatch()
+
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv()
 
@@ -143,6 +146,13 @@ LOCALE_PATHS = [os.path.join(PROJECT_ROOT, "locale")]
 USE_I18N = True
 USE_TZ = True
 
+DEFAULT_FILE_STORAGE = 'saleor.core.azure_storage.AzureMediaStorage'
+STATICFILES_STORAGE = 'saleor.core.azure_storage.AzureStaticStorage'
+
+AZURE_ACCOUNT_NAME = os.getenv('AZURE_ACCOUNT_NAME')
+AZURE_ACCOUNT_KEY = os.getenv('AZURE_ACCOUNT_KEY')
+AZURE_CUSTOM_DOMAIN = f'{AZURE_ACCOUNT_NAME}.blob.core.windows.net'
+
 FORM_RENDERER = "django.forms.renderers.TemplatesSetting"
 
 EMAIL_URL = os.environ.get("EMAIL_URL")
@@ -197,11 +207,16 @@ DEFAULT_FROM_EMAIL: str = os.environ.get(
     "DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "noreply@example.com"
 )
 
-MEDIA_ROOT: str = os.path.join(PROJECT_ROOT, "media")
-MEDIA_URL: str = os.environ.get("MEDIA_URL", "/media/")
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_ROOT: str = os.path.join(PROJECT_ROOT, "static")
-STATIC_URL: str = os.environ.get("STATIC_URL", "/static/")
+STATIC_URL = f'https://{AZURE_CUSTOM_DOMAIN}/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+MEDIA_URL = f'https://{AZURE_CUSTOM_DOMAIN}/media/'
+MEDIA_ROOT = BASE_DIR / 'mediafiles'
+
+
 STATICFILES_DIRS = [
     ("images", os.path.join(PROJECT_ROOT, "saleor", "static", "images"))
 ]
@@ -262,8 +277,6 @@ if (os.environ["RSA_PRIVATE_KEY_BASE64"]):
         decoded_key = base64.b64decode(b64_key.encode("utf-8"))
         RSA_PRIVATE_KEY = decoded_key.decode("utf-8")
       # or raise an error
-
-print(RSA_PRIVATE_KEY)
 
 RSA_PRIVATE_PASSWORD = os.environ.get("RSA_PRIVATE_PASSWORD", None)
 JWT_MANAGER_PATH = os.environ.get(
